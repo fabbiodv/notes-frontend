@@ -4,9 +4,31 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+const notes = [
+  {
+    id: 1,
+    content: "HTML is easy",
+    date: "2019-05-30T17:30:31.098Z",
+    important: true,
+    categories: ["sports", "hobby"]
+  },
+  {
+    id: 2,
+    content: "Browser can execute only in javascript",
+    date: "2019-05-30T17:30:31.098Z",
+    important: false
+  },
+  {
+    id: 3,
+    content: "GET and POST are the most important methods of HTML",
+    date: "2019-05-30T17:30:31.098Z",
+    important: true
+  },
+]
+
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <App notes={notes} />
   </React.StrictMode>,
   document.getElementById('root')
 );
