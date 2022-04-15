@@ -1,10 +1,8 @@
 import './App.css';
 import React, { useEffect, useState } from 'react';
 import { Note } from "./Note.js"
-import { 
-  create as createNote,
-  getAll as getAllNotes
-} from "./services/notes"
+import noteService from './services/notes'
+
 
 
 
@@ -12,15 +10,17 @@ export default function App() {
 
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [showAll, setShowAll] = useState(true);
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
 
 useEffect(() => {
-  console.log("useEffect")
-  setLoading(true)
-  getAllNotes().then((notes) => {
-    console.log("seteando las notas")
-    setNotes(notes)
-    setLoading(false) 
+  noteService
+  .getAll()
+  .then((initialNotes) => {
+    setNotes(initialNotes)
   })
 }, [])
 
@@ -30,37 +30,74 @@ useEffect(() => {
   }
   
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-
-    console.log("Crear nota")
-    const noteToAddToState = {
-      title: newNote,
-      body: newNote, 
-      userId: 1
+  const addNote = (event) => {
+    event.preventDefault();    
+    const noteObject = {
+      content: newNote,
+      date: new Date().toISOString(), 
+      important: Math.random() > 0.5,
+      id: notes.length + 1,
     }
 
-    createNote(noteToAddToState).then((newNote) => {
-        setNotes((prevNotes) => prevNotes.concat(newNote))
+    noteService
+    .create(noteObject)
+    .then((returnedNote) => {
+        setNotes(notes.concat(returnedNote))
+        setNewNote("")
       })
-
-    setNewNote("")
   }
 
-  console.log("render")
+  const toggleImportanceOf = (id) => {
+    const note = notes.find(n => n.id === id)
+    const changedNote = { ...note, important: !note.important }
+  
+    noteService
+      .update(id, changedNote)
+      .then(returnedNote => {
+        setNotes(notes.map(note => note.id !== id ? note : returnedNote))
+      })
+      .catch(error => {
+        setErrorMessage(
+          `Note '${note.content}' was already removed from server`
+        )
+        setTimeout(() => {
+          setErrorMessage(null)
+        }, 5000)   
+      })
+  }
+
+  const handleNoteChange = (event) => {
+    setNewNote(event.target.value)
+  }
+
+  const notesToShow = showAll
+    ? notes
+    : notes.filter(note => note.important)
+
 
   return (
     <div>
       <h1>Notes</h1>
-      {loading ? 'Cargando..' : ""}
-      <ol>
-        {notes.map((note) => (
-            <Note key={note.id} {...note}/>
-        ))}
-      </ol>
-      <form onSubmit={handleSubmit}>
-        <input type='text' onChange={handleChange} value={newNote}/>
-        <button>Crear Nota</button>
+      <div>
+        <button onClick={() => setShowAll(!showAll)}>
+          show {showAll ? 'important' : 'all'}
+        </button>
+      </div>
+      <ul>
+        {notesToShow.map((note, i) => 
+            <Note
+              key={i} 
+              note={note}
+              toggleImportanceOf={()=> toggleImportanceOf(note.id)}
+              />
+        )}
+      </ul>
+      <form onSubmit={addNote}>
+        <input
+          onChange={handleNoteChange}
+          value={newNote}
+          />
+        <button type='submit'>Crear Nota</button>
       </form>
     </div>
   );
