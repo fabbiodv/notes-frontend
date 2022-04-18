@@ -1,6 +1,6 @@
 import './App.css';
 import React, { useEffect, useState } from 'react';
-import { Note } from "./Note.js"
+import Note from './components/Note';
 import noteService from './services/notes'
 import loginService from './services/login'
 
@@ -28,23 +28,31 @@ useEffect(() => {
   })
 }, [])
 
-
-  const handleChange = (event) => {
-    setNewNote(event.target.value)
+useEffect(() => {
+  const loggedUserJSON = window.localStorage.getItem('loggedNoteAppUser')
+  if (loggedUserJSON) {
+    const user = JSON.parse(loggedUserJSON)
+    setUser(user)
+    noteService.setToken(user.token)
   }
-  
+}, []);
+
+const handleLogout = () => {
+  setUser(null)
+  noteService.setToken(user.token)
+  window.localStorage.removeItem('loggedNoteAppUser')
+}
 
   const addNote = (event) => {
     event.preventDefault();    
     const noteObject = {
       content: newNote,
-      date: new Date().toISOString(), 
       important: Math.random() > 0.5,
-      id: notes.length + 1,
     }
 
+
     noteService
-    .create(noteObject)
+    .create(noteObject,)
     .then((returnedNote) => {
         setNotes(notes.concat(returnedNote))
         setNewNote("")
@@ -82,7 +90,12 @@ useEffect(() => {
         password
       })
 
-      console.log(user)
+      window.localStorage.setItem(
+        'loggedNoteAppUser', JSON.stringify(user)
+      )
+
+      noteService.setToken(user.token)
+
       setUser(user)
       setUsername('')
       setPassword('')
@@ -98,13 +111,8 @@ useEffect(() => {
     ? notes
     : notes.filter(note => note.important)
 
-
-  return (
-    <div>
-      <h1>Notes</h1>
-
-      <form onSubmit={handleLogin}>
-
+    const renderLoginForm = () => (//metodo quedevuelve el form del login
+        <form onSubmit={handleLogin}>
         <div>
           <input
               type='text'
@@ -114,7 +122,6 @@ useEffect(() => {
               onChange={({target})=>setUsername(target.value)}
           />
         </div>
-
         <div>
           <input
             type='password'
@@ -124,11 +131,35 @@ useEffect(() => {
             onChange={({target})=>setPassword(target.value)}
           />
         </div>
-
         <button>
           Login
         </button>
       </form>
+      )
+
+    const renderCreateNoteForm = () => (
+      <>
+        <form onSubmit={addNote}>
+          <input
+            onChange={handleNoteChange}
+            value={newNote}
+            placeholder="Write your note content"
+            />
+          <button type='submit'>save</button>
+        </form>
+        <div>
+          <button onClick={handleLogout}>
+            Cerrar Sesión
+          </button>
+        </div>
+        </>
+      )
+
+  return (
+    <div>
+      <h1>Notes</h1>
+
+      {user ? renderCreateNoteForm() : renderLoginForm()}
 
       <div>
         <button onClick={() => setShowAll(!showAll)}>
@@ -144,13 +175,6 @@ useEffect(() => {
               />
         )}
       </ul>
-      <form onSubmit={addNote}>
-        <input
-          onChange={handleNoteChange}
-          value={newNote}
-          />
-        <button type='submit'>Crear Nota</button>
-      </form>
     </div>
   );
 }
